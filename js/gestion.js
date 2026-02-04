@@ -22,9 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Pré-sélection seulement si aucune option n'est encore choisie
-if (filiereStored && !filiereSelect.value) {
-    filiereSelect.value = filiereStored;
-}
+filiereSelect.disabled = false;
 
     }
 
@@ -48,10 +46,14 @@ function updateTableau() {
     const semaine = document.getElementById('semaineSelect').value;
     const tableContainer = document.getElementById('tableContainer');
     
-    if (!semaine) { 
-        tableContainer.style.display = 'none'; 
-        return; 
-    }
+   if (!semaine) {
+    if (tableContainer) tableContainer.style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    return;
+}
+document.getElementById('emptyState').style.display = 'none';
+if (tableContainer) tableContainer.style.display = 'block';
+
     
     tableContainer.style.display = 'block';
     
@@ -163,10 +165,11 @@ function openDetail(student_id, filiere) {
 
 function importDAT() {
     const filiere = sessionStorage.getItem('current_user_filiere') || '';
-    const semaine = document.getElementById('semaineSelect').value;
-    
-    if (!semaine) return alert('Sélectionnez une semaine d\'abord');
-    
+    if (!semaine) {
+    if (tableContainer) tableContainer.style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    return;
+}  
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.dat,.txt';
