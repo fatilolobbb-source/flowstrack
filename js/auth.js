@@ -118,6 +118,17 @@ async function handleSignup(e) {
             msg.textContent = data.error || 'Erreur inscription'; msg.style.display='block';
         }
     } catch (e) {
-        msg.textContent = 'Erreur réseau'; msg.style.display='block';
+        // Backend unreachable - save locally
+        console.warn('Backend unreachable, saving student locally', e);
+        const students = JSON.parse(localStorage.getItem('local_students') || '[]');
+        if (students.find(s => s.email === email)) {
+            msg.textContent = 'Email déjà inscrit'; msg.style.display='block'; return;
+        }
+        const hash = btoa(password); // simple encoding for demo (not secure - use backend for production)
+        students.push({ id: Date.now(), nom, prenom, email, filiere, zk_num, password_hash: hash });
+        localStorage.setItem('local_students', JSON.stringify(students));
+        msg.style.display = 'none';
+        alert('Inscription réussie (mode local), vous pouvez vous connecter.');
+        window.location.href = 'student_login.html';
     }
 }
