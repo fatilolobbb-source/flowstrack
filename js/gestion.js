@@ -70,8 +70,9 @@ if (tableContainer) tableContainer.style.display = 'block';
     const attendance = JSON.parse(localStorage.getItem(`attendance_${filiere}_${semaine}`) || '{}');
     
     // Remplir le tableau
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
+const tbody = document.getElementById('tableBody');
+if (!tbody) return;
+tbody.innerHTML = '';
     
     students.forEach((student) => {
         const tr = document.createElement('tr');
