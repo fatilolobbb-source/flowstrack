@@ -18,6 +18,10 @@ function initializeWeeks() {
     }
 }
 
+function updateTableau() {
+    loadStudents();
+}
+
 async function loadStudents() {
     const filiere = document.getElementById('filiereSelect').value;
     const semaine = document.getElementById('semaineSelect').value;
@@ -36,7 +40,8 @@ async function loadStudents() {
             isdia: [{ id: 1, nom: 'IBRAHIM', prenom: 'Ahmed' }, { id: 2, nom: 'HASSAN', prenom: 'Sara' }],
             info: [{ id: 3, nom: 'ANAS', prenom: 'Anas' }, { id: 4, nom: 'KHADIJA', prenom: 'Khadija' }],
             logiciel: [{ id: 5, nom: 'RANIA', prenom: 'Rania' }],
-            cyber: [{ id: 6, nom: 'ZINEB', prenom: 'Zineb' }]
+            cyber: [{ id: 6, nom: 'ZINEB', prenom: 'Zineb' }],
+            ilia: [{ id: 7, nom: 'BEN ALI', prenom: 'Aya' }, { id: 8, nom: 'HAMZA', prenom: 'Hamza' }]
         };
         const students = fallbackStudents[filiere] || [];
         renderStudentTable(students, filiere, semaine);
@@ -131,4 +136,10 @@ async function importDAT() {
         loadStudents();
     };
     input.click();
+}
+
+function logout() {
+    sessionStorage.removeItem('user_logged_in');
+    sessionStorage.removeItem('current_user');
+    window.location.href = 'login.html';
 }
