@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Pré-sélection seulement si aucune option n'est encore choisie
+        if (filiereStored && !filiereSelect.value) {
+    filiereSelect.value = filiereStored;
+}
 filiereSelect.disabled = false;
 
     }
