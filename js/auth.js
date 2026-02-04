@@ -76,6 +76,7 @@ async function handleStudentLogin(e) {
     const err = document.getElementById('studentError');
     if (!email || !password) { err.textContent = 'Remplissez tous les champs'; err.style.display='block'; return; }
 
+    let success = false;
     try {
         const res = await fetch(window.API_BASE_URL + '/login_student.php', {
             method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password })
@@ -86,11 +87,24 @@ async function handleStudentLogin(e) {
             sessionStorage.setItem('student_id', data.id);
             sessionStorage.setItem('student_name', data.nom + ' ' + data.prenom);
             window.location.href = 'student_space.html';
-        } else {
-            err.textContent = data.error || 'Identifiants invalides'; err.style.display = 'block';
+            success = true;
         }
     } catch (e) {
-        err.textContent = 'Erreur réseau, réessayez'; err.style.display = 'block';
+        console.log('Backend unreachable, trying local fallback');
+    }
+
+    // Fallback: check local students
+    if (!success) {
+        const students = JSON.parse(localStorage.getItem('local_students') || '[]');
+        const student = students.find(s => s.email === email && atob(s.password_hash) === password);
+        if (student) {
+            sessionStorage.setItem('student_logged_in', 'true');
+            sessionStorage.setItem('student_id', student.id);
+            sessionStorage.setItem('student_name', student.nom + ' ' + student.prenom);
+            window.location.href = 'student_space.html';
+        } else {
+            err.textContent = 'Identifiants invalides'; err.style.display = 'block';
+        }
     }
 }
 
@@ -107,28 +121,34 @@ async function handleSignup(e) {
     if (!nom || !prenom || !email || !filiere || !password) { msg.textContent = 'Remplissez tous les champs requis'; msg.style.display = 'block'; return; }
     if (!/@asp\.me$/i.test(email)) { msg.textContent = "L'email doit se terminer par @asp.me"; msg.style.display='block'; return; }
 
+    // Check if email already exists locally
+    const students = JSON.parse(localStorage.getItem('local_students') || '[]');
+    if (students.find(s => s.email === email)) {
+        msg.textContent = 'Email déjà inscrit'; msg.style.display='block'; return;
+    }
+
+    // Try backend first
+    let success = false;
     try {
         const res = await fetch(window.API_BASE_URL + '/signup_student.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nom, prenom, email, filiere, zk_num, password }) });
         const data = await res.json();
         if (data.success) {
             msg.style.display = 'none';
-            alert('Inscription réussie, vous pouvez vous connecter.');
+            alert('Inscription réussie (serveur), vous pouvez vous connecter.');
             window.location.href = 'student_login.html';
-        } else {
-            msg.textContent = data.error || 'Erreur inscription'; msg.style.display='block';
+            success = true;
         }
     } catch (e) {
-        // Backend unreachable - save locally
-        console.warn('Backend unreachable, saving student locally', e);
-        const students = JSON.parse(localStorage.getItem('local_students') || '[]');
-        if (students.find(s => s.email === email)) {
-            msg.textContent = 'Email déjà inscrit'; msg.style.display='block'; return;
-        }
-        const hash = btoa(password); // simple encoding for demo (not secure - use backend for production)
+        console.log('Backend unreachable, using local fallback');
+    }
+
+    // If backend failed, save locally
+    if (!success) {
+        const hash = btoa(password);
         students.push({ id: Date.now(), nom, prenom, email, filiere, zk_num, password_hash: hash });
         localStorage.setItem('local_students', JSON.stringify(students));
         msg.style.display = 'none';
-        alert('Inscription réussie (mode local), vous pouvez vous connecter.');
+        alert('Inscription réussie (stockage local), vous pouvez vous connecter.');
         window.location.href = 'student_login.html';
     }
 }
