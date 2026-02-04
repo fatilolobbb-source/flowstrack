@@ -27,8 +27,9 @@ async function handleProfLogin(e) {
         sessionStorage.setItem('user_logged_in', 'true');
         sessionStorage.setItem('current_user', window.TEACHER.username);
         sessionStorage.setItem('current_user_name', window.TEACHER.name);
-        sessionStorage.setItem('current_user_filiere', window.TEACHER.filiere);
-        sessionStorage.setItem('current_user_module', window.TEACHER.module);
+        // Do not force a filière: allow the professor to choose a filière on the gestion page
+        sessionStorage.setItem('current_user_filiere', '');
+        sessionStorage.setItem('current_user_module', '');
         window.location.href = 'gestion.html';
     } else {
         err.textContent = 'Identifiants invalides';

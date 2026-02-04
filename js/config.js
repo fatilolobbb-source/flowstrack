@@ -34,3 +34,12 @@ window.STUDENTS_BY_FILIERE = {
     { id: 10, num: '010', nom: 'MEHDI', prenom: 'Mehdi', zk_num: '4002' }
   ]
 };
+
+// Mapping filière => module par défaut (utilisé pour auto-remplir le module)
+window.FILIERE_MODULE_MAP = {
+  isdia: 'Algèbre',
+  ilia: 'Analyse',
+  info: 'Programmation',
+  logiciel: 'Génie Logiciel',
+  cyber: 'Sécurité des Réseaux'
+};

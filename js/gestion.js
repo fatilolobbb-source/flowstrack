@@ -3,20 +3,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Afficher le nom du professeur et sa filière/module
     const name = sessionStorage.getItem('current_user_name') || 'Professeur';
-    const filiere = sessionStorage.getItem('current_user_filiere') || '';
-    const module = sessionStorage.getItem('current_user_module') || '';
-    
+    const filiereStored = sessionStorage.getItem('current_user_filiere') || '';
+    const moduleStored = sessionStorage.getItem('current_user_module') || '';
+
     document.getElementById('profName').textContent = `Bienvenue, ${name}`;
-    document.getElementById('profModule').textContent = `Filière assignée: ${filiere.toUpperCase()} | Module: ${module}`;
-    
-    // Le professeur ne peut voir que sa filière
+    document.getElementById('profModule').textContent = moduleStored ? `Filière assignée: ${filiereStored.toUpperCase()} | Module: ${moduleStored}` : '';
+
+    // Remplir dynamiquement la liste des filières depuis la config
     const filiereSelect = document.getElementById('filiereSelect');
-    if (filiereSelect) {
-        filiereSelect.value = filiere;
-        filiereSelect.disabled = true; // Filière fixe
+    if (filiereSelect && window.FILIERE_MODULE_MAP) {
+        // Si les options ont été placées en dur, on les garde, sinon on reconstruit
+        // Assurer qu'au moins les clés sont présentes
+        Object.keys(window.FILIERE_MODULE_MAP).forEach(key => {
+            if (![...filiereSelect.options].some(o => o.value === key)) {
+                const opt = document.createElement('option');
+                opt.value = key; opt.textContent = key.toUpperCase(); filiereSelect.appendChild(opt);
+            }
+        });
+
+        // Si l'utilisateur a déjà une filière en session, la sélectionner
+        if (filiereStored) filiereSelect.value = filiereStored;
     }
-    
+
     initializeWeeks();
+
+    // Si une filière est sélectionnée, charger ses étudiants
+    if (filiereSelect && filiereSelect.value) loadStudents();
 });
 
 function initializeWeeks() {
@@ -29,7 +41,7 @@ function initializeWeeks() {
 }
 
 function updateTableau() {
-    const filiere = sessionStorage.getItem('current_user_filiere') || '';
+    const filiere = document.getElementById('filiereSelect').value || sessionStorage.getItem('current_user_filiere') || '';
     const semaine = document.getElementById('semaineSelect').value;
     const tableContainer = document.getElementById('tableContainer');
     
@@ -40,8 +52,8 @@ function updateTableau() {
     
     tableContainer.style.display = 'block';
     
-    // Charger les étudiants inscrits pour cette filière
-    const students = window.STUDENTS_BY_FILIERE[filiere] || [];
+    // Charger les étudiants inscrits pour cette filière (depuis backend si possible)
+    const students = window.CURRENT_STUDENTS && Array.isArray(window.CURRENT_STUDENTS) ? window.CURRENT_STUDENTS : (window.STUDENTS_BY_FILIERE[filiere] || []);
     
     // Charger les données de présence sauvegardées pour cette semaine
     const attendance = JSON.parse(localStorage.getItem(`attendance_${filiere}_${semaine}`) || '{}');
@@ -53,14 +65,13 @@ function updateTableau() {
     students.forEach((student) => {
         const tr = document.createElement('tr');
         const status = attendance[student.id] || ''; // '' = pas marqué, 'present' ou 'absent'
-        
         tr.innerHTML = `
-            <td>${student.num}</td>
-            <td>${student.nom}</td>
-            <td>${student.prenom}</td>
+            <td>${student.num || ''}</td>
+            <td>${student.nom || ''}</td>
+            <td>${student.prenom || ''}</td>
             <td>
-                <button class="status-btn ${status === 'present' ? 'present' : ''}" onclick="markStatus(${student.id}, '${filiere}', ${semaine}, 'present')">✓ Présent</button>
-                <button class="status-btn ${status === 'absent' ? 'absent' : ''}" onclick="markStatus(${student.id}, '${filiere}', ${semaine}, 'absent')">✗ Absent</button>
+                <button class="status-btn ${status === 'present' ? 'present' : ''}" onclick="markStatus(${student.id}, '${filiere}', '${semaine}', 'present')">✓ Présent</button>
+                <button class="status-btn ${status === 'absent' ? 'absent' : ''}" onclick="markStatus(${student.id}, '${filiere}', '${semaine}', 'absent')">✗ Absent</button>
             </td>
             <td><button class="btn-detail" onclick="openDetail(${student.id}, '${filiere}')">Détail</button></td>
         `;
@@ -75,6 +86,71 @@ function markStatus(student_id, filiere, semaine, status) {
     
     // Rafraîchir le tableau
     updateTableau();
+}
+
+// Charger les étudiants pour la filière sélectionnée (API puis fallback)
+async function loadStudents() {
+    const filiere = document.getElementById('filiereSelect').value;
+    if (!filiere) return;
+
+    // Sauvegarder la filière sélectionnée en session
+    sessionStorage.setItem('current_user_filiere', filiere);
+
+    // Auto-remplir le module depuis la map
+    const moduleLabel = document.getElementById('moduleLabel');
+    const moduleName = (window.FILIERE_MODULE_MAP && window.FILIERE_MODULE_MAP[filiere]) ? window.FILIERE_MODULE_MAP[filiere] : '';
+    if (moduleLabel) moduleLabel.textContent = moduleName || '—';
+    if (moduleName) sessionStorage.setItem('current_user_module', moduleName);
+
+    // Essayer le backend
+    let students = [];
+    try {
+        const url = `${window.API_BASE_URL.replace(/\/$/, '')}/get_students.php?filiere=${encodeURIComponent(filiere)}`;
+        const res = await fetch(url, {cache: 'no-store'});
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length) students = data.map(s => ({ id: s.id, num: s.num || s.num || s.id, nom: s.nom || s.nom, prenom: s.prenom || s.prenom, zk_num: s.zk_num || s.deviceId || '' }));
+        }
+    } catch (e) {
+        console.warn('API get_students failed, fallback to data file', e);
+    }
+
+    // Fallback: local embedded data file or config map
+    if (!students.length) {
+        try {
+            const res2 = await fetch('data/students.json', {cache: 'no-store'});
+            if (res2.ok) {
+                const all = await res2.json();
+                students = all.filter(s => (s.filiere || '').toLowerCase() === filiere.toLowerCase()).map((s, idx) => ({ id: s.id || idx+1, num: s.num || s.id || idx+1, nom: s.nom || '', prenom: s.prenom || '', zk_num: s.deviceId || s.code || '' }));
+            }
+        } catch (e) {
+            // Dernier fallback: use window.STUDENTS_BY_FILIERE demo list
+            students = window.STUDENTS_BY_FILIERE[filiere] || [];
+        }
+    }
+
+    // Merge with locally-signed students (signup fallback)
+    try {
+        const local = JSON.parse(localStorage.getItem('local_students') || '[]');
+        const localForFiliere = local.filter(s => (s.filiere || '').toLowerCase() === filiere.toLowerCase()).map((s, idx) => ({ id: s.id || `local_${idx}_${Date.now()}`, num: s.num || s.id || `L${idx+1}`, nom: s.nom || '', prenom: s.prenom || '', zk_num: s.zk_num || s.deviceId || '' }));
+        // Merge, avoiding duplicates by zk_num or email/num
+        const seen = new Set();
+        const merged = [];
+        [...localForFiliere, ...students].forEach(s => {
+            const key = (s.zk_num || '') + '::' + (s.num || '') + '::' + (s.nom || '');
+            if (!seen.has(key)) { seen.add(key); merged.push(s); }
+        });
+        students = merged;
+    } catch (e) {
+        // ignore
+    }
+
+    // Mettre en mémoire globale pour updateTableau
+    window.CURRENT_STUDENTS = students;
+
+    // Afficher tableau si semaine sélectionnée
+    const semaine = document.getElementById('semaineSelect').value;
+    if (semaine) updateTableau();
 }
 
 function openDetail(student_id, filiere) {
@@ -109,7 +185,7 @@ function importDAT() {
         
         // Charger la présence sauvegardée pour cette semaine
         const attendance = JSON.parse(localStorage.getItem(`attendance_${filiere}_${semaine}`) || '{}');
-        const students = window.STUDENTS_BY_FILIERE[filiere] || [];
+        const students = window.CURRENT_STUDENTS && Array.isArray(window.CURRENT_STUDENTS) ? window.CURRENT_STUDENTS : (window.STUDENTS_BY_FILIERE[filiere] || []);
         
         let marked = 0;
         students.forEach(s => {
