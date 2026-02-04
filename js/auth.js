@@ -53,7 +53,18 @@ async function handleProfLogin(e) {
             err.style.display = 'block';
         }
     } catch (e) {
-        err.textContent = 'Erreur réseau, réessayez';
+        // Backend unreachable - try local fallback with hardcoded credentials
+        console.warn('Backend unreachable, trying local fallback', e);
+        if (username === window.TEACHER_CREDENTIALS.username && password === window.TEACHER_CREDENTIALS.password) {
+            sessionStorage.setItem('user_logged_in', 'true');
+            sessionStorage.setItem('current_user', username);
+            sessionStorage.setItem('current_user_display', window.TEACHER_CREDENTIALS.name || username);
+            sessionStorage.setItem('current_user_id', 'local');
+            sessionStorage.setItem('current_user_modules', JSON.stringify(window.TEACHER_CREDENTIALS.modules || {}));
+            window.location.href = 'gestion.html';
+            return;
+        }
+        err.textContent = 'Identifiants invalides';
         err.style.display = 'block';
     }
 }
