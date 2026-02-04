@@ -21,8 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Si l'utilisateur a déjà une filière en session, la sélectionner
-        if (filiereStored) filiereSelect.value = filiereStored;
+        // Pré-sélection seulement si aucune option n'est encore choisie
+if (filiereStored && !filiereSelect.value) {
+    filiereSelect.value = filiereStored;
+}
+
     }
 
     initializeWeeks();
