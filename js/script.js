@@ -495,6 +495,11 @@ async function updateTableau() {
             </td>
             <td>
                 <button class="btn-detail btn-secondary" onclick='openDetail("${filiere}", ${JSON.stringify(idForClick)})'>Détail</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
 async function setStatus(filiere, semaine, idOrNum, status) {
     const modules = getTeacherModules(filiere);
     const moduleName = (modules && modules.length) ? modules[0] : '';
