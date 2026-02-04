@@ -60,7 +60,9 @@
                     <div class="control-group">
                         <label for="semaineSelect">Sélectionner la semaine</label>
                         <select id="semaineSelect"
-                                onchange="updateTableau(); updateStatistics()">
+                                if (typeof updateStatistics === 'function') {
+    updateStatistics();
+}
                             <option value="">-- Choisir une semaine --</option>
                         </select>
                     </div>
