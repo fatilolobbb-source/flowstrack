@@ -22,48 +22,15 @@ async function handleProfLogin(e) {
     const err = document.getElementById('errorMessage');
     if (!username || !password) { err.textContent = 'Remplissez tous les champs'; err.style.display='block'; return; }
 
-    // Client-side quick override for local static setups (fallback)
-    if (username === window.TEACHER_CREDENTIALS.username && password === window.TEACHER_CREDENTIALS.password) {
+    // Simple check: username and password must match the configured teacher
+    if (username === window.TEACHER.username && password === window.TEACHER.password) {
         sessionStorage.setItem('user_logged_in', 'true');
-        sessionStorage.setItem('current_user', username);
-        sessionStorage.setItem('current_user_display', window.TEACHER_CREDENTIALS.name || username);
-        sessionStorage.setItem('current_user_id', 'local');
-        sessionStorage.setItem('current_user_modules', JSON.stringify(window.TEACHER_CREDENTIALS.modules || {}));
+        sessionStorage.setItem('current_user', window.TEACHER.username);
+        sessionStorage.setItem('current_user_name', window.TEACHER.name);
+        sessionStorage.setItem('current_user_filiere', window.TEACHER.filiere);
+        sessionStorage.setItem('current_user_module', window.TEACHER.module);
         window.location.href = 'gestion.html';
-        return;
-    }
-
-    try {
-        const res = await fetch(window.API_BASE_URL + '/login_prof.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (data.success) {
-            err.style.display = 'none';
-            sessionStorage.setItem('user_logged_in', 'true');
-            sessionStorage.setItem('current_user', data.username);
-            sessionStorage.setItem('current_user_display', data.name);
-            sessionStorage.setItem('current_user_id', data.id);
-            sessionStorage.setItem('current_user_modules', JSON.stringify({ [data.module]: [data.module] }));
-            window.location.href = 'gestion.html';
-        } else {
-            err.textContent = data.error || 'Identifiants invalides';
-            err.style.display = 'block';
-        }
-    } catch (e) {
-        // Backend unreachable - try local fallback with hardcoded credentials
-        console.warn('Backend unreachable, trying local fallback', e);
-        if (username === window.TEACHER_CREDENTIALS.username && password === window.TEACHER_CREDENTIALS.password) {
-            sessionStorage.setItem('user_logged_in', 'true');
-            sessionStorage.setItem('current_user', username);
-            sessionStorage.setItem('current_user_display', window.TEACHER_CREDENTIALS.name || username);
-            sessionStorage.setItem('current_user_id', 'local');
-            sessionStorage.setItem('current_user_modules', JSON.stringify(window.TEACHER_CREDENTIALS.modules || {}));
-            window.location.href = 'gestion.html';
-            return;
-        }
+    } else {
         err.textContent = 'Identifiants invalides';
         err.style.display = 'block';
     }

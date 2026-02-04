@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Espace Étudiant</title>
+  <title>Détail Étudiant</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,18 +11,23 @@
     <div class="navbar-logo">FlowTrack</div>
     <div class="navbar-nav">
       <a href="index.html">Accueil</a>
+      <button class="logout-btn" onclick="goBack()">Retour</button>
     </div>
   </nav>
 
-  <main style="padding: 6rem 2rem;">
-    <h2 id="studentName">Espace étudiant</h2>
+  <main style="padding:6rem 2rem;">
+    <h2 id="studentTitle">Détail Étudiant</h2>
     <p id="studentInfo"></p>
 
-    <section>
-      <h3>Mes présences</h3>
-      <div id="studentRecords">Chargement...</div>
-      <div id="studentStats"></div>
-    </section>
+    <h3>Présences - Absences</h3>
+    <table id="attendanceTable" style="width:100%; border-collapse:collapse; margin-top:1rem; border:1px solid #ddd;">
+      <thead style="background:#f0f0f0;">
+        <tr><th style="padding:8px; border:1px solid #ddd;">Semaine</th><th style="padding:8px; border:1px solid #ddd;">Statut</th></tr>
+      </thead>
+      <tbody id="attendanceBody"></tbody>
+    </table>
+
+    <p id="statsText" style="margin-top:2rem; font-weight:bold;"></p>
   </main>
 
   <script src="js/config.js"></script>
