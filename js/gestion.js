@@ -52,6 +52,9 @@ function updateTableau() {
    if (!semaine) {
     if (tableContainer) tableContainer.style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
+    if (typeof updateStatistics === 'function') {
+    updateStatistics();
+}
     return;
 }
 document.getElementById('emptyState').style.display = 'none';
